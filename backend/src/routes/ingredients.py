@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
-from src.models.user import db
-from src.models import Ingredient, SupplierIngredient, Supplier
+from src.models import db, Ingredient, SupplierIngredient, Supplier
 from sqlalchemy import or_, and_
 
 ingredients_bp = Blueprint('ingredients', __name__)
@@ -239,4 +238,3 @@ def search_ingredients():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
