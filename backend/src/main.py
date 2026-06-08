@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from flask import Flask, send_from_directory
 from flask_cors import CORS
+from werkzeug.exceptions import NotFound
 
 from src.models import db
 from src.routes.ingredients import ingredients_bp
@@ -46,8 +47,11 @@ def serve(path):
     if static_folder_path is None:
         return "Static folder not configured", 404
 
-    if path and os.path.exists(os.path.join(static_folder_path, path)):
-        return send_from_directory(static_folder_path, path)
+    if path:
+        try:
+            return send_from_directory(static_folder_path, path)
+        except NotFound:
+            pass
 
     index_path = os.path.join(static_folder_path, "index.html")
     if os.path.exists(index_path):
