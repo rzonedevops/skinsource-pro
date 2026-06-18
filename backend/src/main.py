@@ -20,8 +20,7 @@ from src.routes.intelligence import intelligence_bp
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), "static"))
 configured_secret = os.getenv("SECRET_KEY")
 if not configured_secret:
-    logging.basicConfig(level=logging.WARNING)
-    logging.getLogger(__name__).warning(
+    logging.getLogger("backend.security").warning(
         "SECRET_KEY environment variable is not set; generated ephemeral key will invalidate sessions on restart."
     )
 app.config["SECRET_KEY"] = configured_secret or secrets.token_urlsafe(32)
