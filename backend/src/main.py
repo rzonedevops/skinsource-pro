@@ -1,5 +1,7 @@
 import os
+import secrets
 import sys
+import logging
 
 # DON'T CHANGE THIS !!!
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -16,7 +18,12 @@ from src.routes.intelligence import intelligence_bp
 
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), "static"))
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
+configured_secret = os.getenv("SECRET_KEY")
+if not configured_secret:
+    logging.getLogger("backend.security").warning(
+        "SECRET_KEY environment variable is not set; generated ephemeral key will invalidate sessions on restart."
+    )
+app.config["SECRET_KEY"] = configured_secret or secrets.token_urlsafe(32)
 default_db_path = os.path.join(os.path.dirname(__file__), "database")
 os.makedirs(default_db_path, exist_ok=True)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
