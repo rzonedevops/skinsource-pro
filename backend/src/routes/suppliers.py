@@ -1,6 +1,7 @@
+import json
+
 from flask import Blueprint, request, jsonify
-from src.models.user import db
-from src.models import Supplier, SupplierIngredient, Ingredient
+from src.models import db, Supplier, SupplierIngredient, Ingredient
 from sqlalchemy import or_, and_, desc
 
 suppliers_bp = Blueprint('suppliers', __name__)
@@ -11,7 +12,7 @@ def get_suppliers():
     try:
         # Get query parameters
         country = request.args.get('country')
-        verified_only = request.args.get('verified', type=bool)
+        verified_only = request.args.get('verified', '').lower() in {'true', '1', 'yes'}
         min_score = request.args.get('min_score', type=float)
         search = request.args.get('search')
         page = request.args.get('page', 1, type=int)
@@ -332,4 +333,3 @@ def search_suppliers():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-

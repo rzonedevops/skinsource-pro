@@ -1,372 +1,335 @@
 #!/usr/bin/env python3
-"""
-Seed data script for SkinSource Pro backend
-Populates the database with sample ingredients, suppliers, and relationships
-"""
+"""Deterministic seed data for end-to-end procurement scenarios."""
 
+import json
 import os
 import sys
-import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
-# Add the project root to the path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from src.models.user import db, User
-from src.models.ingredient import Ingredient
-from src.models.supplier import Supplier
-from src.models.supplier_ingredient import SupplierIngredient
-from src.models.procurement import ProcurementRequest, RFQResponse
 from src.main import app
+from src.models import (
+    db,
+    User,
+    Ingredient,
+    Supplier,
+    SupplierIngredient,
+    ProcurementRequest,
+    RFQRecipient,
+    RFQResponse,
+    ProcurementAward,
+    ProcurementEvent,
+)
 
-def create_sample_ingredients():
-    """Create sample skincare ingredients"""
-    ingredients_data = [
-        {
-            'name': 'Vitamin C (L-Ascorbic Acid)',
-            'inci_name': 'Ascorbic Acid',
-            'cas_number': '50-81-7',
-            'category': 'active',
-            'function': 'Antioxidant, brightening, anti-aging',
-            'description': 'Pure L-Ascorbic Acid, the most potent form of Vitamin C for skincare applications.',
-            'regulatory_status': {'FDA': 'approved', 'EU': 'approved', 'COSMOS': 'approved'},
-            'sustainability_score': 4.2,
-            'price_range_min': 80.0,
-            'price_range_max': 120.0,
-            'evidence_level': 'strong'
-        },
-        {
-            'name': 'Hyaluronic Acid (High MW)',
-            'inci_name': 'Sodium Hyaluronate',
-            'cas_number': '9067-32-7',
-            'category': 'moisturizer',
-            'function': 'Hydrating, plumping, moisture retention',
-            'description': 'High molecular weight hyaluronic acid for superior skin hydration and plumping effects.',
-            'regulatory_status': {'FDA': 'approved', 'EU': 'approved', 'COSMOS': 'approved'},
-            'sustainability_score': 4.5,
-            'price_range_min': 400.0,
-            'price_range_max': 600.0,
-            'evidence_level': 'strong'
-        },
-        {
-            'name': 'Niacinamide',
-            'inci_name': 'Niacinamide',
-            'cas_number': '98-92-0',
-            'category': 'active',
-            'function': 'Pore minimizing, oil control, brightening',
-            'description': 'Vitamin B3 derivative known for its pore-minimizing and oil-controlling properties.',
-            'regulatory_status': {'FDA': 'approved', 'EU': 'approved', 'COSMOS': 'approved'},
-            'sustainability_score': 4.0,
-            'price_range_min': 20.0,
-            'price_range_max': 35.0,
-            'evidence_level': 'strong'
-        },
-        {
-            'name': 'Bakuchiol',
-            'inci_name': 'Bakuchiol',
-            'cas_number': '10309-37-2',
-            'category': 'active',
-            'function': 'Anti-aging, retinol alternative',
-            'description': 'Plant-based retinol alternative derived from Psoralea corylifolia with anti-aging benefits.',
-            'regulatory_status': {'FDA': 'approved', 'EU': 'approved', 'COSMOS': 'approved'},
-            'sustainability_score': 4.8,
-            'price_range_min': 320.0,
-            'price_range_max': 450.0,
-            'evidence_level': 'limited'
-        },
-        {
-            'name': 'Glycerin',
-            'inci_name': 'Glycerin',
-            'cas_number': '56-81-5',
-            'category': 'moisturizer',
-            'function': 'Humectant, moisturizing',
-            'description': 'Versatile humectant that attracts moisture to the skin.',
-            'regulatory_status': {'FDA': 'approved', 'EU': 'approved', 'COSMOS': 'approved'},
-            'sustainability_score': 4.3,
-            'price_range_min': 2.0,
-            'price_range_max': 5.0,
-            'evidence_level': 'strong'
-        },
-        {
-            'name': 'Salicylic Acid',
-            'inci_name': 'Salicylic Acid',
-            'cas_number': '69-72-7',
-            'category': 'active',
-            'function': 'Exfoliant, acne treatment, pore clearing',
-            'description': 'Beta hydroxy acid (BHA) that penetrates pores to clear acne and exfoliate skin.',
-            'regulatory_status': {'FDA': 'approved', 'EU': 'approved', 'COSMOS': 'restricted'},
-            'sustainability_score': 3.8,
-            'price_range_min': 15.0,
-            'price_range_max': 25.0,
-            'evidence_level': 'strong'
-        }
-    ]
-    
-    ingredients = []
-    for data in ingredients_data:
-        ingredient = Ingredient(
-            name=data['name'],
-            inci_name=data['inci_name'],
-            cas_number=data['cas_number'],
-            category=data['category'],
-            function=data['function'],
-            description=data['description'],
-            sustainability_score=data['sustainability_score'],
-            price_range_min=data['price_range_min'],
-            price_range_max=data['price_range_max'],
-            evidence_level=data['evidence_level']
-        )
-        ingredient.set_regulatory_status(data['regulatory_status'])
-        ingredients.append(ingredient)
-        db.session.add(ingredient)
-    
-    return ingredients
 
-def create_sample_suppliers():
-    """Create sample suppliers"""
-    suppliers_data = [
-        {
-            'company_name': 'ChemCorp International',
-            'contact_email': 'procurement@chemcorp.com',
-            'contact_phone': '+49-30-12345678',
-            'website': 'https://www.chemcorp.com',
-            'address': 'Industriestraße 123, 10115 Berlin',
-            'country': 'Germany',
-            'certifications': ['ISO 9001:2015', 'COSMOS Organic', 'FDA Registered', 'REACH Compliant'],
-            'geographic_regions': ['Europe', 'North America', 'Asia'],
-            'specialties': ['Active ingredients', 'Pharmaceutical grade', 'Organic certified'],
-            'quality_score': 4.8,
-            'reliability_score': 4.6,
-            'sustainability_score': 4.9,
-            'price_competitiveness_score': 4.2,
-            'verified_status': True
-        },
-        {
-            'company_name': 'Global Ingredients Ltd',
-            'contact_email': 'sales@globalingredients.com',
-            'contact_phone': '+1-555-0123',
-            'website': 'https://www.globalingredients.com',
-            'address': '1234 Industrial Blvd, Newark, NJ 07102',
-            'country': 'United States',
-            'certifications': ['ISO 9001:2015', 'FDA Registered', 'NSF Certified'],
-            'geographic_regions': ['North America', 'South America'],
-            'specialties': ['Bulk ingredients', 'Custom formulations', 'Fast delivery'],
-            'quality_score': 4.5,
-            'reliability_score': 4.7,
-            'sustainability_score': 4.1,
-            'price_competitiveness_score': 4.6,
-            'verified_status': True
-        },
-        {
-            'company_name': 'PureChem Solutions',
-            'contact_email': 'info@purechem.com',
-            'contact_phone': '+86-21-12345678',
-            'website': 'https://www.purechem.com',
-            'address': '789 Chemical Park, Shanghai 200000',
-            'country': 'China',
-            'certifications': ['ISO 9001:2015', 'GMP Certified', 'REACH Compliant'],
-            'geographic_regions': ['Asia', 'Europe', 'North America'],
-            'specialties': ['Cost-effective solutions', 'Large volume orders', 'Custom synthesis'],
-            'quality_score': 4.3,
-            'reliability_score': 4.2,
-            'sustainability_score': 3.8,
-            'price_competitiveness_score': 4.8,
-            'verified_status': True
-        },
-        {
-            'company_name': 'BioNaturals Inc',
-            'contact_email': 'contact@bionaturals.com',
-            'contact_phone': '+33-1-23456789',
-            'website': 'https://www.bionaturals.com',
-            'address': '456 Rue de la Chimie, 75001 Paris',
-            'country': 'France',
-            'certifications': ['ECOCERT', 'COSMOS Natural', 'ISO 14001', 'Organic Certified'],
-            'geographic_regions': ['Europe', 'North America'],
-            'specialties': ['Natural ingredients', 'Sustainable sourcing', 'Botanical extracts'],
-            'quality_score': 4.7,
-            'reliability_score': 4.4,
-            'sustainability_score': 4.9,
-            'price_competitiveness_score': 3.9,
-            'verified_status': True
-        }
-    ]
-    
-    suppliers = []
-    for data in suppliers_data:
-        supplier = Supplier(
-            company_name=data['company_name'],
-            contact_email=data['contact_email'],
-            contact_phone=data['contact_phone'],
-            website=data['website'],
-            address=data['address'],
-            country=data['country'],
-            quality_score=data['quality_score'],
-            reliability_score=data['reliability_score'],
-            sustainability_score=data['sustainability_score'],
-            price_competitiveness_score=data['price_competitiveness_score'],
-            verified_status=data['verified_status']
-        )
-        
-        supplier.set_certifications(data['certifications'])
-        supplier.geographic_regions = json.dumps(data['geographic_regions'])
-        supplier.specialties = json.dumps(data['specialties'])
-        supplier.calculate_overall_score()
-        
-        suppliers.append(supplier)
-        db.session.add(supplier)
-    
-    return suppliers
+BASE_TIME = datetime(2026, 1, 15, 10, 0, 0)
 
-def create_supplier_ingredient_relationships(ingredients, suppliers):
-    """Create relationships between suppliers and ingredients"""
-    relationships_data = [
-        # ChemCorp International (supplier 0)
-        {'supplier_idx': 0, 'ingredient_idx': 0, 'price_per_kg': 85.0, 'lead_time_days': 7, 'grade': 'USP'},
-        {'supplier_idx': 0, 'ingredient_idx': 1, 'price_per_kg': 450.0, 'lead_time_days': 14, 'grade': 'Cosmetic'},
-        {'supplier_idx': 0, 'ingredient_idx': 2, 'price_per_kg': 25.0, 'lead_time_days': 5, 'grade': 'USP'},
-        
-        # Global Ingredients Ltd (supplier 1)
-        {'supplier_idx': 1, 'ingredient_idx': 0, 'price_per_kg': 95.0, 'lead_time_days': 10, 'grade': 'Pharmaceutical'},
-        {'supplier_idx': 1, 'ingredient_idx': 2, 'price_per_kg': 22.0, 'lead_time_days': 7, 'grade': 'Cosmetic'},
-        {'supplier_idx': 1, 'ingredient_idx': 4, 'price_per_kg': 3.5, 'lead_time_days': 3, 'grade': 'USP'},
-        {'supplier_idx': 1, 'ingredient_idx': 5, 'price_per_kg': 18.0, 'lead_time_days': 5, 'grade': 'USP'},
-        
-        # PureChem Solutions (supplier 2)
-        {'supplier_idx': 2, 'ingredient_idx': 0, 'price_per_kg': 75.0, 'lead_time_days': 21, 'grade': 'Industrial'},
-        {'supplier_idx': 2, 'ingredient_idx': 1, 'price_per_kg': 380.0, 'lead_time_days': 28, 'grade': 'Cosmetic'},
-        {'supplier_idx': 2, 'ingredient_idx': 4, 'price_per_kg': 2.2, 'lead_time_days': 14, 'grade': 'Technical'},
-        
-        # BioNaturals Inc (supplier 3)
-        {'supplier_idx': 3, 'ingredient_idx': 3, 'price_per_kg': 380.0, 'lead_time_days': 21, 'grade': 'Organic'},
-        {'supplier_idx': 3, 'ingredient_idx': 4, 'price_per_kg': 4.2, 'lead_time_days': 10, 'grade': 'Organic'},
-    ]
-    
-    for rel in relationships_data:
-        supplier_ingredient = SupplierIngredient(
-            supplier_id=suppliers[rel['supplier_idx']].id,
-            ingredient_id=ingredients[rel['ingredient_idx']].id,
-            price_per_kg=rel['price_per_kg'],
-            lead_time_days=rel['lead_time_days'],
-            grade=rel['grade'],
-            minimum_order_quantity=25,  # Default 25kg minimum
-            availability_status='available'
-        )
-        db.session.add(supplier_ingredient)
 
-def create_sample_users():
-    """Create sample users"""
-    users_data = [
-        {'username': 'john_doe', 'email': 'john.doe@beautyco.com'},
-        {'username': 'sarah_chen', 'email': 'sarah.chen@skintech.com'},
-        {'username': 'mike_johnson', 'email': 'mike.johnson@cosmeticsinc.com'}
+def create_users():
+    users = [
+        User(username="proc_manager", email="manager@skinsource.io", role="manager"),
+        User(username="proc_analyst", email="analyst@skinsource.io", role="analyst"),
+        User(username="proc_viewer", email="viewer@skinsource.io", role="viewer"),
     ]
-    
-    users = []
-    for data in users_data:
-        user = User(username=data['username'], email=data['email'])
-        users.append(user)
-        db.session.add(user)
-    
+    db.session.add_all(users)
     return users
 
-def create_sample_procurement_requests(users, ingredients):
-    """Create sample procurement requests"""
-    requests_data = [
+
+def create_ingredients():
+    ingredient_payloads = [
         {
-            'user_idx': 0,
-            'ingredient_idx': 0,  # Vitamin C
-            'title': 'Vitamin C for Anti-Aging Serum',
-            'description': 'Need high-quality L-Ascorbic Acid for new anti-aging serum line',
-            'quantity_needed': 500.0,
-            'target_price': 90.0,
-            'delivery_date': date(2025, 9, 15),
-            'status': 'sent',
-            'priority': 'high'
+            "name": "Vitamin C (L-Ascorbic Acid)",
+            "inci_name": "Ascorbic Acid",
+            "cas_number": "50-81-7",
+            "category": "active",
+            "function": "Antioxidant, brightening",
+            "description": "High-purity L-Ascorbic Acid for premium serums",
+            "sustainability_score": 4.1,
+            "price_range_min": 78.0,
+            "price_range_max": 125.0,
+            "evidence_level": "strong",
+            "regulatory_status": {"FDA": "approved", "EU": "approved", "COSMOS": "approved"},
         },
         {
-            'user_idx': 1,
-            'ingredient_idx': 2,  # Niacinamide
-            'title': 'Niacinamide for Pore Minimizer',
-            'description': 'Sourcing niacinamide for new pore minimizing product',
-            'quantity_needed': 200.0,
-            'target_price': 25.0,
-            'delivery_date': date(2025, 8, 30),
-            'status': 'received',
-            'priority': 'medium'
+            "name": "Niacinamide",
+            "inci_name": "Niacinamide",
+            "cas_number": "98-92-0",
+            "category": "active",
+            "function": "Pore minimizing, barrier support",
+            "description": "Pharmaceutical grade niacinamide",
+            "sustainability_score": 4.0,
+            "price_range_min": 22.0,
+            "price_range_max": 38.0,
+            "evidence_level": "strong",
+            "regulatory_status": {"FDA": "approved", "EU": "approved", "COSMOS": "approved"},
         },
         {
-            'user_idx': 2,
-            'ingredient_idx': 3,  # Bakuchiol
-            'title': 'Bakuchiol for Natural Retinol Alternative',
-            'description': 'Looking for sustainable bakuchiol source for clean beauty line',
-            'quantity_needed': 100.0,
-            'target_price': 400.0,
-            'delivery_date': date(2025, 10, 1),
-            'status': 'draft',
-            'priority': 'medium'
-        }
+            "name": "Bakuchiol",
+            "inci_name": "Bakuchiol",
+            "cas_number": "10309-37-2",
+            "category": "active",
+            "function": "Retinol alternative",
+            "description": "Plant-derived anti-aging active",
+            "sustainability_score": 4.7,
+            "price_range_min": 300.0,
+            "price_range_max": 450.0,
+            "evidence_level": "limited",
+            "regulatory_status": {"FDA": "approved", "EU": "approved", "COSMOS": "approved"},
+        },
     ]
-    
-    requests = []
-    for data in requests_data:
-        request = ProcurementRequest(
-            user_id=users[data['user_idx']].id,
-            ingredient_id=ingredients[data['ingredient_idx']].id,
-            title=data['title'],
-            description=data['description'],
-            quantity_needed=data['quantity_needed'],
-            target_price=data['target_price'],
-            delivery_date=data['delivery_date'],
-            status=data['status'],
-            priority=data['priority']
+
+    ingredients = []
+    for payload in ingredient_payloads:
+        ingredient = Ingredient(
+            name=payload["name"],
+            inci_name=payload["inci_name"],
+            cas_number=payload["cas_number"],
+            category=payload["category"],
+            function=payload["function"],
+            description=payload["description"],
+            sustainability_score=payload["sustainability_score"],
+            price_range_min=payload["price_range_min"],
+            price_range_max=payload["price_range_max"],
+            evidence_level=payload["evidence_level"],
+            created_at=BASE_TIME,
+            updated_at=BASE_TIME,
         )
-        
-        if data['status'] == 'sent':
-            request.sent_at = datetime.utcnow()
-        
-        requests.append(request)
-        db.session.add(request)
-    
-    return requests
+        ingredient.set_regulatory_status(payload["regulatory_status"])
+        db.session.add(ingredient)
+        ingredients.append(ingredient)
+
+    return ingredients
+
+
+def create_suppliers():
+    supplier_payloads = [
+        {
+            "company_name": "ChemCorp International",
+            "country": "Germany",
+            "contact_email": "sales@chemcorp.example",
+            "contact_phone": "+49-30-1234-6789",
+            "website": "https://chemcorp.example",
+            "certifications": ["ISO 9001", "COSMOS", "GMP"],
+            "quality_score": 4.7,
+            "reliability_score": 4.5,
+            "sustainability_score": 4.2,
+            "price_competitiveness_score": 4.0,
+            "verified_status": True,
+            "specialties": ["Actives", "Antioxidants"],
+        },
+        {
+            "company_name": "BioNaturals Ltd",
+            "country": "United Kingdom",
+            "contact_email": "contact@bionaturals.example",
+            "contact_phone": "+44-20-2244-7788",
+            "website": "https://bionaturals.example",
+            "certifications": ["COSMOS", "Ecocert", "Vegan"],
+            "quality_score": 4.6,
+            "reliability_score": 4.4,
+            "sustainability_score": 4.8,
+            "price_competitiveness_score": 3.7,
+            "verified_status": True,
+            "specialties": ["Botanical actives", "Organic extracts"],
+        },
+        {
+            "company_name": "Pacific Ingredients Co",
+            "country": "South Korea",
+            "contact_email": "export@pacific.example",
+            "contact_phone": "+82-2-1122-3344",
+            "website": "https://pacific.example",
+            "certifications": ["ISO 22716", "KFDA"],
+            "quality_score": 4.3,
+            "reliability_score": 4.2,
+            "sustainability_score": 3.9,
+            "price_competitiveness_score": 4.5,
+            "verified_status": True,
+            "specialties": ["Fermented ingredients", "K-Beauty actives"],
+        },
+    ]
+
+    suppliers = []
+    for payload in supplier_payloads:
+        supplier = Supplier(
+            company_name=payload["company_name"],
+            country=payload["country"],
+            contact_email=payload["contact_email"],
+            contact_phone=payload["contact_phone"],
+            website=payload["website"],
+            quality_score=payload["quality_score"],
+            reliability_score=payload["reliability_score"],
+            sustainability_score=payload["sustainability_score"],
+            price_competitiveness_score=payload["price_competitiveness_score"],
+            verified_status=payload["verified_status"],
+            created_at=BASE_TIME,
+            updated_at=BASE_TIME,
+        )
+        supplier.set_certifications(payload["certifications"])
+        supplier.specialties = json.dumps(payload["specialties"])
+        supplier.geographic_regions = json.dumps([payload["country"]])
+        supplier.calculate_overall_score()
+        db.session.add(supplier)
+        suppliers.append(supplier)
+
+    return suppliers
+
+
+def create_offerings(ingredients, suppliers):
+    offerings = [
+        (0, 0, 88.0, 120, 10),
+        (0, 1, 92.0, 100, 14),
+        (0, 2, 82.0, 250, 18),
+        (1, 0, 27.0, 200, 7),
+        (1, 1, 30.0, 120, 9),
+        (1, 2, 24.5, 500, 16),
+        (2, 0, 360.0, 50, 15),
+        (2, 1, 345.0, 80, 18),
+        (2, 2, 325.0, 120, 24),
+    ]
+
+    for ingredient_idx, supplier_idx, price_per_kg, moq, lead_time in offerings:
+        db.session.add(
+            SupplierIngredient(
+                ingredient_id=ingredients[ingredient_idx].id,
+                supplier_id=suppliers[supplier_idx].id,
+                price_per_kg=price_per_kg,
+                minimum_order_quantity=moq,
+                lead_time_days=lead_time,
+                availability_status="available",
+                grade="Cosmetic",
+                purity_percentage=98.5,
+                created_at=BASE_TIME,
+                last_updated=BASE_TIME,
+            )
+        )
+
+
+def create_rfq_scenario(users, ingredients, suppliers):
+    manager = users[0]
+    analyst = users[1]
+
+    request_item = ProcurementRequest(
+        user_id=analyst.id,
+        ingredient_id=ingredients[0].id,
+        title="Vitamin C for anti-aging serum Q1",
+        description="Need 500kg high-purity L-Ascorbic Acid for new line",
+        quantity_needed=500,
+        target_price=95,
+        delivery_date=date(2026, 2, 28),
+        specifications=json.dumps({"purity": "99%", "form": "powder"}),
+        quality_requirements=json.dumps({"coa_required": True, "msds_required": True}),
+        priority="high",
+        status="awarded",
+        created_at=BASE_TIME,
+        updated_at=BASE_TIME,
+        sent_at=BASE_TIME + timedelta(hours=6),
+        deadline=BASE_TIME + timedelta(days=7),
+        awarded_at=BASE_TIME + timedelta(days=5),
+    )
+    db.session.add(request_item)
+    db.session.flush()
+
+    recipients = []
+    for idx, supplier in enumerate(suppliers):
+        recipient = RFQRecipient(
+            procurement_request_id=request_item.id,
+            supplier_id=supplier.id,
+            status="responded",
+            invited_at=BASE_TIME + timedelta(hours=2),
+            sent_at=BASE_TIME + timedelta(hours=6),
+            responded_at=BASE_TIME + timedelta(days=idx + 2),
+        )
+        recipients.append(recipient)
+        db.session.add(recipient)
+
+    db.session.flush()
+
+    response_specs = [
+        (suppliers[0], recipients[0], 88.0, 10, 4.52, "accepted"),
+        (suppliers[1], recipients[1], 92.0, 14, 4.28, "rejected"),
+        (suppliers[2], recipients[2], 82.0, 18, 4.11, "rejected"),
+    ]
+
+    winning_response = None
+    for supplier, recipient, quoted_price, lead_time, total_score, status in response_specs:
+        response = RFQResponse(
+            procurement_request_id=request_item.id,
+            supplier_id=supplier.id,
+            recipient_id=recipient.id,
+            quoted_price=quoted_price,
+            total_price=quoted_price * request_item.quantity_needed,
+            lead_time_days=lead_time,
+            minimum_order_quantity=100,
+            payment_terms="Net 30",
+            validity_days=30,
+            coa_provided=True,
+            msds_provided=True,
+            status=status,
+            price_score=4.5 if supplier.id == suppliers[0].id else 3.9,
+            lead_time_score=4.6 if supplier.id == suppliers[0].id else 3.8,
+            quality_score=supplier.quality_score,
+            sustainability_score=supplier.sustainability_score,
+            risk_score=4.1 if supplier.id == suppliers[0].id else 3.6,
+            total_score=total_score,
+            scoring_profile="balanced",
+            response_date=BASE_TIME + timedelta(days=2),
+            reviewed_at=BASE_TIME + timedelta(days=5),
+        )
+        db.session.add(response)
+        if status == "accepted":
+            winning_response = response
+
+    db.session.flush()
+
+    award = ProcurementAward(
+        procurement_request_id=request_item.id,
+        rfq_response_id=winning_response.id,
+        supplier_id=winning_response.supplier_id,
+        rationale="Best balance of lead time and quality while still under target price",
+        decision_notes="Low risk and complete documentation",
+        decided_by_user_id=manager.id,
+        created_at=BASE_TIME + timedelta(days=5),
+    )
+    db.session.add(award)
+
+    events = [
+        ("request_created", "draft", None, BASE_TIME),
+        ("status_transition", "draft", "sent", BASE_TIME + timedelta(hours=6)),
+        ("response_received", "sent", "received", BASE_TIME + timedelta(days=2)),
+        ("responses_scored", "received", "evaluated", BASE_TIME + timedelta(days=4)),
+        ("request_awarded", "evaluated", "awarded", BASE_TIME + timedelta(days=5)),
+    ]
+
+    for event_type, from_status, to_status, event_time in events:
+        db.session.add(
+            ProcurementEvent(
+                procurement_request_id=request_item.id,
+                event_type=event_type,
+                from_status=from_status,
+                to_status=to_status,
+                actor_user_id=manager.id,
+                event_metadata=json.dumps({"seeded": True}),
+                created_at=event_time,
+            )
+        )
+
 
 def seed_database():
-    """Main function to seed the database"""
-    print("Starting database seeding...")
-    
     with app.app_context():
-        # Clear existing data
-        print("Clearing existing data...")
         db.drop_all()
         db.create_all()
-        
-        # Create sample data
-        print("Creating sample users...")
-        users = create_sample_users()
-        
-        print("Creating sample ingredients...")
-        ingredients = create_sample_ingredients()
-        
-        print("Creating sample suppliers...")
-        suppliers = create_sample_suppliers()
-        
-        # Commit to get IDs
-        db.session.commit()
-        
-        print("Creating supplier-ingredient relationships...")
-        create_supplier_ingredient_relationships(ingredients, suppliers)
-        
-        print("Creating sample procurement requests...")
-        requests = create_sample_procurement_requests(users, ingredients)
-        
-        # Final commit
-        db.session.commit()
-        
-        print(f"Database seeded successfully!")
-        print(f"Created {len(users)} users")
-        print(f"Created {len(ingredients)} ingredients")
-        print(f"Created {len(suppliers)} suppliers")
-        print(f"Created {len(requests)} procurement requests")
 
-if __name__ == '__main__':
+        users = create_users()
+        ingredients = create_ingredients()
+        suppliers = create_suppliers()
+        db.session.flush()
+
+        create_offerings(ingredients, suppliers)
+        create_rfq_scenario(users, ingredients, suppliers)
+
+        db.session.commit()
+        print("Seed completed with deterministic RFQ lifecycle data")
+
+
+if __name__ == "__main__":
     seed_database()
-

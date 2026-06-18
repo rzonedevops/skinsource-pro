@@ -1,363 +1,315 @@
-from flask import Blueprint, request, jsonify
-from src.models.user import db
-from src.models import Supplier, Ingredient, SupplierIngredient
-from src.services.supplier_intelligence import SupplierIntelligenceService
-from sqlalchemy import or_, and_, desc
-from datetime import datetime
+import json
+from collections import defaultdict, deque
+from datetime import datetime, timedelta
+from functools import wraps
 
-intelligence_bp = Blueprint('intelligence', __name__)
+from flask import Blueprint, request
+
+from src.models import Supplier, Ingredient, SupplierIngredient, IntelligenceAudit, db
+from src.routes._utils import ApiError, api_error_response, api_success, get_actor, normalize_pagination, parse_json, parse_page_args
+from src.services.supplier_intelligence import SupplierIntelligenceService, WEIGHTING_PROFILES
+
+
+intelligence_bp = Blueprint("intelligence", __name__)
 intelligence_service = SupplierIntelligenceService()
 
-@intelligence_bp.route('/intelligence/discover-suppliers', methods=['POST'])
+RATE_LIMIT_WINDOW = timedelta(minutes=1)
+RATE_LIMIT_MAX = 60
+RATE_LIMIT_TRACKER = defaultdict(deque)
+
+
+def rate_limit(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        remote_addr = request.remote_addr or "unknown"
+        now = datetime.utcnow()
+        history = RATE_LIMIT_TRACKER[remote_addr]
+
+        while history and now - history[0] > RATE_LIMIT_WINDOW:
+            history.popleft()
+
+        if len(history) >= RATE_LIMIT_MAX:
+            raise ApiError("Rate limit exceeded", code="rate_limited", status=429)
+
+        history.append(now)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def _audit(response_status, payload=None):
+    actor = get_actor(require_user=False)
+    audit = IntelligenceAudit(
+        endpoint=request.path,
+        actor_user_id=getattr(actor, "id", None),
+        remote_addr=request.remote_addr,
+        query_params=json.dumps(dict(request.args)),
+        request_payload=json.dumps(payload or {}),
+        response_status=response_status,
+    )
+    db.session.add(audit)
+    db.session.commit()
+
+
+def _success_response(data, status=200, meta=None, payload=None):
+    response = api_success({"api_version": "v1", **data}, status=status, meta=meta)
+    _audit(status, payload=payload)
+    return response
+
+
+@intelligence_bp.errorhandler(ApiError)
+def _handle_api_error(error):
+    _audit(error.status)
+    return api_error_response(error)
+
+
+@intelligence_bp.route("/v1/intelligence/discover-suppliers", methods=["POST"])
+@intelligence_bp.route("/intelligence/discover-suppliers", methods=["POST"])
+@rate_limit
 def discover_suppliers():
-    """
-    Discover potential suppliers for a given ingredient
-    """
-    try:
-        data = request.get_json()
-        ingredient_name = data.get('ingredient_name')
-        region = data.get('region')
-        
-        if not ingredient_name:
-            return jsonify({'error': 'Ingredient name is required'}), 400
-        
-        discovered_suppliers = intelligence_service.discover_suppliers(
-            ingredient_name=ingredient_name,
-            region=region
-        )
-        
-        return jsonify({
-            'discovered_suppliers': discovered_suppliers,
-            'total_found': len(discovered_suppliers),
-            'search_criteria': {
-                'ingredient_name': ingredient_name,
-                'region': region
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    data = parse_json(required_fields=["ingredient_name"])
+    discovered_suppliers = intelligence_service.discover_suppliers(
+        ingredient_name=data["ingredient_name"],
+        region=data.get("region"),
+    )
 
-@intelligence_bp.route('/intelligence/evaluate-supplier/<int:supplier_id>', methods=['GET'])
+    page, per_page, sort = parse_page_args(default_per_page=20)
+    if sort == "confidence":
+        discovered_suppliers.sort(key=lambda item: item["confidence_score"], reverse=True)
+
+    start = (page - 1) * per_page
+    end = start + per_page
+    paged = discovered_suppliers[start:end]
+
+    meta = {
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": len(discovered_suppliers),
+            "pages": (len(discovered_suppliers) + per_page - 1) // per_page,
+            "has_next": end < len(discovered_suppliers),
+            "has_prev": page > 1,
+        },
+        "sort": sort,
+    }
+
+    return _success_response(
+        {
+            "suppliers": paged,
+            "criteria": {"ingredient_name": data["ingredient_name"], "region": data.get("region")},
+        },
+        meta=meta,
+        payload=data,
+    )
+
+
+@intelligence_bp.route("/v1/intelligence/evaluate-supplier/<int:supplier_id>", methods=["GET"])
+@intelligence_bp.route("/intelligence/evaluate-supplier/<int:supplier_id>", methods=["GET"])
+@rate_limit
 def evaluate_supplier(supplier_id):
-    """
-    Get comprehensive supplier evaluation
-    """
-    try:
-        evaluation = intelligence_service.evaluate_supplier_performance(supplier_id)
-        
-        if 'error' in evaluation:
-            return jsonify(evaluation), 404
-        
-        return jsonify(evaluation)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    evaluation = intelligence_service.evaluate_supplier_performance(supplier_id)
+    if "error" in evaluation:
+        raise ApiError(evaluation["error"], code="not_found", status=404)
+    return _success_response({"evaluation": evaluation})
 
-@intelligence_bp.route('/intelligence/optimize-pricing', methods=['POST'])
+
+@intelligence_bp.route("/v1/intelligence/optimize-pricing", methods=["POST"])
+@intelligence_bp.route("/intelligence/optimize-pricing", methods=["POST"])
+@rate_limit
 def optimize_pricing():
-    """
-    Analyze pricing across suppliers and provide optimization recommendations
-    """
-    try:
-        data = request.get_json()
-        ingredient_id = data.get('ingredient_id')
-        quantity = data.get('quantity')
-        
-        if not ingredient_id or not quantity:
-            return jsonify({'error': 'Ingredient ID and quantity are required'}), 400
-        
-        pricing_analysis = intelligence_service.optimize_pricing(
-            ingredient_id=ingredient_id,
-            quantity=float(quantity)
-        )
-        
-        if 'error' in pricing_analysis:
-            return jsonify(pricing_analysis), 404
-        
-        return jsonify(pricing_analysis)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    data = parse_json(required_fields=["ingredient_id", "quantity"])
 
-@intelligence_bp.route('/intelligence/market-intelligence/<category>', methods=['GET'])
+    try:
+        quantity = float(data["quantity"])
+    except (TypeError, ValueError):
+        raise ApiError("quantity must be numeric", code="validation_error", status=400)
+
+    pricing_analysis = intelligence_service.optimize_pricing(ingredient_id=int(data["ingredient_id"]), quantity=quantity)
+    if "error" in pricing_analysis:
+        raise ApiError(pricing_analysis["error"], code="not_found", status=404)
+
+    return _success_response({"pricing_analysis": pricing_analysis}, payload=data)
+
+
+@intelligence_bp.route("/v1/intelligence/market-intelligence/<category>", methods=["GET"])
+@intelligence_bp.route("/intelligence/market-intelligence/<category>", methods=["GET"])
+@rate_limit
 def get_market_intelligence(category):
-    """
-    Get market intelligence for ingredient category
-    """
-    try:
-        market_data = intelligence_service.get_market_intelligence(category)
-        return jsonify(market_data)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    market_data = intelligence_service.get_market_intelligence(category)
+    return _success_response({"market_intelligence": market_data})
 
-@intelligence_bp.route('/intelligence/supplier-recommendations', methods=['GET'])
+
+@intelligence_bp.route("/v1/intelligence/supplier-recommendations", methods=["GET"])
+@intelligence_bp.route("/intelligence/supplier-recommendations", methods=["GET"])
+@rate_limit
 def get_supplier_recommendations():
-    """
-    Get intelligent supplier recommendations based on various criteria
-    """
-    try:
-        # Get query parameters
-        ingredient_category = request.args.get('category')
-        min_score = float(request.args.get('min_score', 4.0))
-        region = request.args.get('region')
-        sustainability_focus = request.args.get('sustainability_focus', 'false').lower() == 'true'
-        
-        # Build query
-        query = Supplier.query.filter(
-            Supplier.overall_score >= min_score,
-            Supplier.active_status == True
-        )
-        
-        if region:
-            query = query.filter(Supplier.country.ilike(f'%{region}%'))
-        
-        if sustainability_focus:
-            query = query.filter(Supplier.sustainability_score >= 4.0)
-        
-        suppliers = query.order_by(desc(Supplier.overall_score)).limit(10).all()
-        
-        recommendations = []
-        for supplier in suppliers:
-            # Get supplier specialties
-            specialties = []
-            if supplier.specialties:
-                try:
-                    specialties = json.loads(supplier.specialties) if isinstance(supplier.specialties, str) else supplier.specialties
-                except:
-                    specialties = []
-            
-            # Filter by ingredient category if specified
-            if ingredient_category and specialties:
-                if not any(ingredient_category.lower() in specialty.lower() for specialty in specialties):
-                    continue
-            
-            recommendation = {
-                'supplier': supplier.to_dict(),
-                'recommendation_score': supplier.overall_score,
-                'reasons': [],
-                'risk_factors': []
-            }
-            
-            # Add recommendation reasons
-            if supplier.overall_score >= 4.5:
-                recommendation['reasons'].append('Excellent overall performance rating')
-            
-            if supplier.verified_status:
-                recommendation['reasons'].append('Verified supplier with proven track record')
-            
-            if supplier.sustainability_score >= 4.5:
-                recommendation['reasons'].append('Outstanding sustainability practices')
-            
-            if supplier.quality_score >= 4.5:
-                recommendation['reasons'].append('Superior quality standards')
-            
-            # Add risk factors
-            if supplier.overall_score < 4.0:
-                recommendation['risk_factors'].append('Below average performance rating')
-            
-            if not supplier.verified_status:
-                recommendation['risk_factors'].append('Unverified supplier - requires due diligence')
-            
-            recommendations.append(recommendation)
-        
-        return jsonify({
-            'recommendations': recommendations,
-            'total_found': len(recommendations),
-            'criteria': {
-                'ingredient_category': ingredient_category,
-                'min_score': min_score,
-                'region': region,
-                'sustainability_focus': sustainability_focus
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    ingredient_id = request.args.get("ingredient_id", type=int)
+    profile = request.args.get("profile", "balanced")
+    page, per_page, sort = parse_page_args(default_per_page=10, max_per_page=50)
 
-@intelligence_bp.route('/intelligence/price-trends/<int:ingredient_id>', methods=['GET'])
+    if not ingredient_id:
+        raise ApiError("ingredient_id query parameter is required", code="validation_error", status=400)
+    if profile not in WEIGHTING_PROFILES:
+        raise ApiError("Invalid profile", code="validation_error", status=400, details={"allowed": list(WEIGHTING_PROFILES)})
+
+    recommendation_payload = intelligence_service.get_supplier_recommendations(ingredient_id=ingredient_id, profile=profile, limit=500)
+    recommendations = recommendation_payload["recommendations"]
+
+    if sort == "price":
+        recommendations.sort(key=lambda item: item["offering"].get("price_per_kg") or 0)
+    else:
+        recommendations.sort(key=lambda item: item["recommendation_score"], reverse=True)
+
+    start = (page - 1) * per_page
+    end = start + per_page
+    paged = recommendations[start:end]
+
+    meta = {
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": len(recommendations),
+            "pages": (len(recommendations) + per_page - 1) // per_page,
+            "has_next": end < len(recommendations),
+            "has_prev": page > 1,
+        },
+        "sort": sort,
+        "filters": {"ingredient_id": ingredient_id, "profile": profile},
+    }
+
+    return _success_response(
+        {
+            "recommendations": paged,
+            "profile": profile,
+        },
+        meta=meta,
+    )
+
+
+@intelligence_bp.route("/v1/intelligence/price-trends/<int:ingredient_id>", methods=["GET"])
+@intelligence_bp.route("/intelligence/price-trends/<int:ingredient_id>", methods=["GET"])
+@rate_limit
 def get_price_trends(ingredient_id):
-    """
-    Get price trends and forecasts for an ingredient
-    """
-    try:
+    ingredient = Ingredient.query.get(ingredient_id)
+    if not ingredient:
+        raise ApiError("Ingredient not found", code="not_found", status=404)
+
+    offerings = SupplierIngredient.query.filter_by(ingredient_id=ingredient_id).all()
+    prices = sorted([offering.price_per_kg for offering in offerings if offering.price_per_kg])
+
+    if not prices:
+        return _success_response(
+            {
+                "price_trends": {
+                    "ingredient_id": ingredient_id,
+                    "ingredient_name": ingredient.name,
+                    "historical_data": [],
+                    "forecast_data": [],
+                    "trend_summary": {"overall_trend": "unknown", "volatility": "unknown"},
+                }
+            }
+        )
+
+    now = datetime.utcnow()
+    historical_data = []
+    for month_offset in range(12, 0, -1):
+        month_date = now - timedelta(days=30 * month_offset)
+        sample_price = prices[(month_offset - 1) % len(prices)]
+        historical_data.append({"month": month_date.strftime("%Y-%m"), "average_price": round(sample_price, 2)})
+
+    average_price = sum(prices) / len(prices)
+    forecast_data = []
+    for month_offset in range(1, 7):
+        month_date = now + timedelta(days=30 * month_offset)
+        drift = 1 + (0.01 * month_offset)
+        forecast_data.append(
+            {
+                "month": month_date.strftime("%Y-%m"),
+                "predicted_price": round(average_price * drift, 2),
+                "confidence_level": "medium",
+            }
+        )
+
+    spread_ratio = (max(prices) - min(prices)) / average_price if average_price else 0
+    volatility = "low" if spread_ratio < 0.1 else "medium" if spread_ratio < 0.25 else "high"
+
+    return _success_response(
+        {
+            "price_trends": {
+                "ingredient_id": ingredient_id,
+                "ingredient_name": ingredient.name,
+                "historical_data": historical_data,
+                "forecast_data": forecast_data,
+                "trend_summary": {
+                    "overall_trend": "increasing",
+                    "volatility": volatility,
+                    "market_factors": [
+                        "Current supplier quote distribution",
+                        "Observed lead-time pressure",
+                        "Recent RFQ response competitiveness",
+                    ],
+                },
+            }
+        }
+    )
+
+
+@intelligence_bp.route("/v1/intelligence/competitive-analysis", methods=["POST"])
+@intelligence_bp.route("/intelligence/competitive-analysis", methods=["POST"])
+@rate_limit
+def competitive_analysis():
+    data = parse_json(required_fields=["ingredient_ids"])
+    ingredient_ids = [int(item) for item in data.get("ingredient_ids", [])]
+    profile = data.get("profile", "balanced")
+    quantity = float(data.get("quantity", 100))
+
+    if profile not in WEIGHTING_PROFILES:
+        raise ApiError("Invalid profile", code="validation_error", status=400)
+
+    analyses = []
+    for ingredient_id in ingredient_ids:
         ingredient = Ingredient.query.get(ingredient_id)
         if not ingredient:
-            return jsonify({'error': 'Ingredient not found'}), 404
-        
-        # Simulate price trend data
-        import random
-        from datetime import datetime, timedelta
-        
-        # Generate historical price data (last 12 months)
-        historical_data = []
-        base_price = ingredient.price_range_min or 100
-        current_date = datetime.now() - timedelta(days=365)
-        
-        for i in range(12):
-            price_variation = random.uniform(-0.15, 0.15)  # ±15% variation
-            price = base_price * (1 + price_variation)
-            
-            historical_data.append({
-                'month': current_date.strftime('%Y-%m'),
-                'average_price': round(price, 2),
-                'price_change': round(price_variation * 100, 1)
-            })
-            
-            current_date += timedelta(days=30)
-            base_price = price  # Use previous price as base for next month
-        
-        # Generate forecast (next 6 months)
-        forecast_data = []
-        for i in range(6):
-            price_variation = random.uniform(-0.10, 0.10)  # ±10% variation for forecast
-            price = base_price * (1 + price_variation)
-            
-            forecast_data.append({
-                'month': current_date.strftime('%Y-%m'),
-                'predicted_price': round(price, 2),
-                'confidence_level': random.choice(['high', 'medium', 'low']),
-                'price_change': round(price_variation * 100, 1)
-            })
-            
-            current_date += timedelta(days=30)
-            base_price = price
-        
-        trend_analysis = {
-            'ingredient_id': ingredient_id,
-            'ingredient_name': ingredient.name,
-            'current_price_range': {
-                'min': ingredient.price_range_min,
-                'max': ingredient.price_range_max
-            },
-            'historical_data': historical_data,
-            'forecast_data': forecast_data,
-            'trend_summary': {
-                'overall_trend': random.choice(['increasing', 'stable', 'decreasing']),
-                'volatility': random.choice(['high', 'medium', 'low']),
-                'seasonal_pattern': random.choice(['strong', 'moderate', 'weak']),
-                'market_factors': [
-                    'Supply chain disruptions',
-                    'Regulatory changes',
-                    'Demand fluctuations',
-                    'Raw material costs'
-                ]
-            },
-            'recommendations': [
-                'Monitor price movements closely',
-                'Consider forward contracts for price stability',
-                'Evaluate alternative suppliers',
-                'Assess inventory optimization opportunities'
-            ]
-        }
-        
-        return jsonify(trend_analysis)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+            continue
+        recommendations = intelligence_service.get_supplier_recommendations(ingredient_id, profile=profile, limit=20)
+        analyses.append(
+            {
+                "ingredient_id": ingredient_id,
+                "ingredient_name": ingredient.name,
+                "quantity": quantity,
+                "profile": profile,
+                "supplier_analysis": recommendations["recommendations"],
+                "risk_signals": [
+                    signal
+                    for rec in recommendations["recommendations"]
+                    for signal in rec.get("risk_signals", [])
+                ],
+            }
+        )
 
-@intelligence_bp.route('/intelligence/competitive-analysis', methods=['POST'])
-def competitive_analysis():
-    """
-    Perform competitive analysis across suppliers for specific requirements
-    """
-    try:
-        data = request.get_json()
-        ingredient_ids = data.get('ingredient_ids', [])
-        requirements = data.get('requirements', {})
-        
-        if not ingredient_ids:
-            return jsonify({'error': 'At least one ingredient ID is required'}), 400
-        
-        analysis_results = []
-        
-        for ingredient_id in ingredient_ids:
-            ingredient = Ingredient.query.get(ingredient_id)
-            if not ingredient:
-                continue
-            
-            # Get supplier offerings for this ingredient
-            offerings = SupplierIngredient.query.filter_by(
-                ingredient_id=ingredient_id
-            ).all()
-            
-            supplier_analysis = []
-            for offering in offerings:
-                supplier = Supplier.query.get(offering.supplier_id)
-                if not supplier:
-                    continue
-                
-                # Calculate competitive score
-                competitive_score = intelligence_service._calculate_value_score(
-                    offering, supplier, requirements.get('quantity', 100)
-                )
-                
-                supplier_analysis.append({
-                    'supplier_name': supplier.company_name,
-                    'supplier_id': supplier.id,
-                    'price_per_kg': offering.price_per_kg,
-                    'lead_time_days': offering.lead_time_days,
-                    'minimum_order_quantity': offering.minimum_order_quantity,
-                    'quality_score': supplier.quality_score,
-                    'reliability_score': supplier.reliability_score,
-                    'sustainability_score': supplier.sustainability_score,
-                    'overall_score': supplier.overall_score,
-                    'competitive_score': competitive_score,
-                    'strengths': [],
-                    'weaknesses': []
-                })
-            
-            # Sort by competitive score
-            supplier_analysis.sort(key=lambda x: x['competitive_score'], reverse=True)
-            
-            # Add strengths and weaknesses
-            for i, analysis in enumerate(supplier_analysis):
-                if i == 0:
-                    analysis['strengths'].append('Best overall value proposition')
-                
-                if analysis['price_per_kg'] == min(s['price_per_kg'] for s in supplier_analysis if s['price_per_kg']):
-                    analysis['strengths'].append('Lowest price')
-                
-                if analysis['quality_score'] >= 4.5:
-                    analysis['strengths'].append('Superior quality')
-                
-                if analysis['sustainability_score'] >= 4.5:
-                    analysis['strengths'].append('Excellent sustainability')
-                
-                if analysis['lead_time_days'] and analysis['lead_time_days'] <= 14:
-                    analysis['strengths'].append('Fast delivery')
-                
-                # Weaknesses
-                if analysis['overall_score'] < 4.0:
-                    analysis['weaknesses'].append('Below average performance')
-                
-                if analysis['price_per_kg'] == max(s['price_per_kg'] for s in supplier_analysis if s['price_per_kg']):
-                    analysis['weaknesses'].append('Highest price')
-                
-                if analysis['lead_time_days'] and analysis['lead_time_days'] > 30:
-                    analysis['weaknesses'].append('Long delivery time')
-            
-            analysis_results.append({
-                'ingredient_id': ingredient_id,
-                'ingredient_name': ingredient.name,
-                'supplier_analysis': supplier_analysis,
-                'market_summary': {
-                    'total_suppliers': len(supplier_analysis),
-                    'price_range': {
-                        'min': min(s['price_per_kg'] for s in supplier_analysis if s['price_per_kg']),
-                        'max': max(s['price_per_kg'] for s in supplier_analysis if s['price_per_kg'])
-                    } if supplier_analysis else None,
-                    'average_lead_time': sum(s['lead_time_days'] for s in supplier_analysis if s['lead_time_days']) / len([s for s in supplier_analysis if s['lead_time_days']]) if supplier_analysis else None
-                }
-            })
-        
-        return jsonify({
-            'competitive_analysis': analysis_results,
-            'analysis_date': datetime.utcnow().isoformat(),
-            'requirements': requirements
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    return _success_response({"competitive_analysis": analyses, "analysis_date": datetime.utcnow().isoformat()}, payload=data)
 
+
+@intelligence_bp.route("/v1/intelligence/audit", methods=["GET"])
+def get_intelligence_audit_log():
+    page, per_page, sort = parse_page_args(default_per_page=20, max_per_page=100)
+    query = IntelligenceAudit.query
+
+    endpoint_filter = request.args.get("endpoint")
+    if endpoint_filter:
+        query = query.filter(IntelligenceAudit.endpoint == endpoint_filter)
+
+    if sort == "created_at":
+        query = query.order_by(IntelligenceAudit.created_at)
+    else:
+        query = query.order_by(IntelligenceAudit.created_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    return api_success(
+        {
+            "api_version": "v1",
+            "audit_entries": [entry.to_dict() for entry in pagination.items],
+        },
+        meta=normalize_pagination(pagination, page, per_page, sort=sort),
+    )
