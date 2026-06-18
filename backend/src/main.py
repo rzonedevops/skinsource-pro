@@ -1,4 +1,5 @@
 import os
+import secrets
 import sys
 
 # DON'T CHANGE THIS !!!
@@ -16,7 +17,7 @@ from src.routes.intelligence import intelligence_bp
 
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), "static"))
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)
 default_db_path = os.path.join(os.path.dirname(__file__), "database")
 os.makedirs(default_db_path, exist_ok=True)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
