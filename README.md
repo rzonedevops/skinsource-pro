@@ -10,6 +10,7 @@ cd /tmp/workspace/rzonedevops/skinsource-pro/backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+export SECRET_KEY="replace-with-a-secure-random-value"  # required for stable sessions across restarts
 python src/seed_data.py
 python src/services/seed_intelligence_data.py
 python src/main.py
