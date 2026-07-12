@@ -60,3 +60,9 @@ CI (`.github/workflows/ci.yml`) enforces the canonical commands:
 ## API reference
 
 See `/tmp/workspace/rzonedevops/skinsource-pro/docs/API_Reference_Guide.md` for normalized `v1` contracts and error schema.
+
+## Ecosystem
+
+SkinSource Pro is part of the [SkinTwin-AI ecosystem](https://github.com/jax-a11y/skintwin-ecosystem-design)
+as the `erp-federation` layer's `procurement-service`. See [ECOSYSTEM.md](./ECOSYSTEM.md) for its
+contracts, events, and position in the architecture.
