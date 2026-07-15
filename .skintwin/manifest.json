@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jax-a11y/skintwin-ecosystem-design/main/schemas/ecosystem-manifest.schema.json",
+  "manifestVersion": "1.0",
+  "github": "rzonedevops/skinsource-pro",
+  "layer": "erp-federation",
+  "role": "procurement-service",
+  "description": "Intelligent procurement platform: Flask/SQLAlchemy REST APIs for ingredients, suppliers, and RFQ lifecycle with a React frontend. Concrete procurement domain of the Federated ERP layer.",
+  "designAlias": "Federated ERP Service (procurement domain)",
+  "gatewayPrefix": "/api/erp/*",
+  "provides": [
+    "procurement-api"
+  ],
+  "consumes": [
+    "supplier-dataset"
+  ],
+  "events": {
+    "publishes": [
+      "inventory.updated"
+    ],
+    "subscribes": [
+      "order.paid"
+    ]
+  },
+  "ci": {
+    "workflows": [
+      "ci.yml (backend pytest + frontend vitest)"
+    ],
+    "usesReusable": false
+  },
+  "registry": "https://github.com/jax-a11y/skintwin-ecosystem-design/blob/main/registry/ecosystem.json"
+}
