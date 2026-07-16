@@ -34,3 +34,10 @@ Payload schemas live at `contracts/events/<topic>.schema.json` in the hub repo.
 CI runs via `.github/workflows/ci.yml`: backend `pytest` plus frontend `vitest` and build, enforcing the
 canonical commands in the README. Reusable workflow templates for the ecosystem are documented in the hub
 repo's `ci/README.md`.
+
+## Design system
+
+The frontend implements the RegimA Zone Design System (deep-navy palette, Electric/Sky Blue
+accents, Montserrat + Open Sans) from `rzonedevops/rzodesys` via the vendored stylesheet
+`frontend/src/styles/rzodesys.css` (a copy of that repo's `dist/rzodesys.css`). Update by
+re-vendoring from the source repo; do not hand-edit the vendored file.

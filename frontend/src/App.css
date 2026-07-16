@@ -1,13 +1,14 @@
+/* SkinSource Pro app styles.
+   Themed with the RegimA Zone Design System (rzonedevops/rzodesys);
+   tokens and rz-* components come from ./styles/rzodesys.css, imported
+   before this file in main.jsx. */
+
 * {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-  color: #111827;
-  background: #f9fafb;
-}
+/* Base body colors/fonts come from the vendored rzodesys.css
+   (deep-navy page, Open Sans body, Montserrat headings). */
 
 button {
   font: inherit;
@@ -27,7 +28,111 @@ button {
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.75rem;
+  background: var(--surface-card);
+  border: 1px solid var(--rz-border);
+  border-radius: var(--rz-radius-card);
+  box-shadow: var(--rz-shadow-card);
+}
+
+/* App chrome ------------------------------------------------------------- */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+}
+
+.app-sidebar {
+  background: var(--surface-card);
+  border-right: 1px solid var(--rz-border);
+  padding: 12px;
+  transition: all 0.2s ease;
+}
+
+.app-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 2px 14px;
+}
+
+.app-sidebar__brand img {
+  height: 36px;
+  border-radius: 6px;
+  display: block;
+}
+
+.app-sidebar__brand span {
+  font: 700 12px var(--rz-font-heading);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-heading);
+  white-space: nowrap;
+}
+
+.app-nav-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--rz-border-subtle);
+  background: transparent;
+  color: var(--text-body);
+  border-radius: var(--rz-radius-md);
+  padding: 0.6rem 0.8rem;
+  cursor: pointer;
+  font-family: var(--rz-font-heading);
+  font-size: var(--text-label);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+}
+
+.app-nav-btn:hover {
+  border-color: var(--rz-border-accent);
+  color: var(--accent-highlight);
+}
+
+.app-nav-btn.is-active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--rz-white);
+}
+
+.app-header__title {
+  margin: 0;
+  font-size: var(--text-h3);
+  text-transform: capitalize;
+}
+
+/* Dashboard signals — brand is monochrome navy + blue: tones are expressed
+   as blue emphasis (good) vs muted surface (warn), never green/amber. */
+
+.signal-tile {
+  padding: 0.7rem;
+  border-radius: var(--rz-radius-tile);
+  background: var(--surface-raised);
+  border: 1px solid var(--rz-border-subtle);
+}
+
+.signal-tile--good {
+  border-color: var(--rz-border-accent);
+}
+
+.signal-tile--good .signal-tile__value {
+  color: var(--accent-highlight);
+}
+
+.signal-tile__label {
+  font-family: var(--rz-font-heading);
+  font-size: var(--text-microlabel);
+  font-weight: var(--weight-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.signal-tile__value {
+  font-family: var(--rz-font-heading);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-heading);
 }

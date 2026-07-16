@@ -12,7 +12,7 @@ export function TabsList({ children }) {
 export function TabsTrigger({ children, value, __tabsValue, __setTabsValue }) {
   const active = value === __tabsValue
   return (
-    <button onClick={() => __setTabsValue(value)} style={{ borderRadius: 8, border: '1px solid #d1d5db', background: active ? '#dcfce7' : '#fff', padding: '0.45rem 0.7rem', cursor: 'pointer' }}>
+    <button className={`rz-chip${active ? ' is-active' : ''}`} onClick={() => __setTabsValue(value)}>
       {children}
     </button>
   )

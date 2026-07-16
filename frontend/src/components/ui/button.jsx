@@ -1,9 +1,10 @@
 export function Button({ children, variant = 'default', size = 'md', className = '', ...props }) {
+  // RegimA Zone palette (rzonedevops/rzodesys): electric-blue primary actions.
   const styleMap = {
-    default: 'background:#16a34a;color:white;border:1px solid #16a34a;',
-    outline: 'background:white;color:#111827;border:1px solid #d1d5db;',
-    ghost: 'background:transparent;color:#111827;border:1px solid transparent;',
-    secondary: 'background:#f3f4f6;color:#111827;border:1px solid #e5e7eb;'
+    default: 'background:var(--rz-blue-electric);color:var(--rz-white);border:1px solid var(--rz-blue-electric);',
+    outline: 'background:transparent;color:var(--rz-text-primary);border:1px solid rgba(255,255,255,0.3);',
+    ghost: 'background:transparent;color:var(--rz-text-primary);border:1px solid transparent;',
+    secondary: 'background:var(--rz-bg-surface);color:var(--rz-text-primary);border:1px solid var(--rz-border);'
   }
 
   const sizeMap = {
