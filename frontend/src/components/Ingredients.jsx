@@ -25,8 +25,8 @@ function Ingredients() {
       {data.map((item) => (
         <div key={item.id} className="card" style={{ padding: '0.8rem 1rem' }}>
           <h3 style={{ margin: 0 }}>{item.name}</h3>
-          <p style={{ margin: '0.3rem 0', color: '#4b5563' }}>{item.function || 'No function provided'}</p>
-          <small>Category: {item.category} · Sustainability: {item.sustainability_score ?? 'n/a'}</small>
+          <p style={{ margin: '0.3rem 0', color: 'var(--rz-text-muted)' }}>{item.function || 'No function provided'}</p>
+          <small style={{ color: 'var(--rz-text-muted)' }}>Category: {item.category} · Sustainability: {item.sustainability_score ?? 'n/a'}</small>
         </div>
       ))}
     </div>

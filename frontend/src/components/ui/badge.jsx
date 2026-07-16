@@ -1,9 +1,11 @@
 export function Badge({ children, className = '', variant = 'default' }) {
+  // RegimA Zone palette (rzonedevops/rzodesys): monochrome navy + blue,
+  // destructive red reserved for error states.
   const variants = {
-    default: { background: '#dcfce7', color: '#166534' },
-    secondary: { background: '#f3f4f6', color: '#374151' },
-    destructive: { background: '#fee2e2', color: '#991b1b' },
-    outline: { background: '#fff', color: '#374151', border: '1px solid #d1d5db' }
+    default: { background: 'var(--rz-blue-electric)', color: 'var(--rz-white)' },
+    secondary: { background: 'var(--rz-bg-surface)', color: 'var(--rz-text-primary)' },
+    destructive: { background: 'hsl(0 84% 60%)', color: 'var(--rz-white)' },
+    outline: { background: 'transparent', color: 'var(--rz-text-primary)', border: '1px solid var(--rz-border)' }
   }
 
   return (

@@ -219,46 +219,46 @@ function Procurement() {
 
   return (
     <div className="space-y-6">
-      {workflowError && <p style={{ color: '#b91c1c' }}>Workflow error: {workflowError}</p>}
+      {workflowError && <p style={{ color: 'hsl(0 84% 60%)' }}>Workflow error: {workflowError}</p>}
 
       <section className="card" style={{ padding: '1rem' }}>
         <h2 style={{ marginTop: 0 }}>RFQ Builder</h2>
         <form onSubmit={createRequest} className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
-          <label>
-            Ingredient
-            <select value={form.ingredient_id} onChange={(event) => updateForm('ingredient_id', event.target.value)} required style={inputStyle}>
+          <label className="rz-field">
+            <span className="rz-field__label">Ingredient</span>
+            <select value={form.ingredient_id} onChange={(event) => updateForm('ingredient_id', event.target.value)} required className="rz-field__input">
               <option value="">Select ingredient</option>
               {ingredients.map((ingredient) => (
                 <option key={ingredient.id} value={ingredient.id}>{ingredient.name}</option>
               ))}
             </select>
           </label>
-          <label>
-            Request title
-            <input value={form.title} onChange={(event) => updateForm('title', event.target.value)} required style={inputStyle} />
+          <label className="rz-field">
+            <span className="rz-field__label">Request title</span>
+            <input value={form.title} onChange={(event) => updateForm('title', event.target.value)} required className="rz-field__input" />
           </label>
-          <label>
-            Quantity needed (kg)
-            <input type="number" min="1" value={form.quantity_needed} onChange={(event) => updateForm('quantity_needed', event.target.value)} required style={inputStyle} />
+          <label className="rz-field">
+            <span className="rz-field__label">Quantity needed (kg)</span>
+            <input type="number" min="1" value={form.quantity_needed} onChange={(event) => updateForm('quantity_needed', event.target.value)} required className="rz-field__input" />
           </label>
-          <label>
-            Target price ($/kg)
-            <input type="number" min="0" step="0.01" value={form.target_price} onChange={(event) => updateForm('target_price', event.target.value)} style={inputStyle} />
+          <label className="rz-field">
+            <span className="rz-field__label">Target price ($/kg)</span>
+            <input type="number" min="0" step="0.01" value={form.target_price} onChange={(event) => updateForm('target_price', event.target.value)} className="rz-field__input" />
           </label>
-          <label>
-            Delivery date
-            <input type="date" value={form.delivery_date} onChange={(event) => updateForm('delivery_date', event.target.value)} style={inputStyle} />
+          <label className="rz-field">
+            <span className="rz-field__label">Delivery date</span>
+            <input type="date" value={form.delivery_date} onChange={(event) => updateForm('delivery_date', event.target.value)} className="rz-field__input" />
           </label>
-          <label>
-            Deadline (ISO timestamp)
-            <input value={form.deadline} onChange={(event) => updateForm('deadline', event.target.value)} placeholder="2026-06-20T17:00:00" style={inputStyle} />
+          <label className="rz-field">
+            <span className="rz-field__label">Deadline (ISO timestamp)</span>
+            <input value={form.deadline} onChange={(event) => updateForm('deadline', event.target.value)} placeholder="2026-06-20T17:00:00" className="rz-field__input" />
           </label>
-          <label style={{ gridColumn: '1 / -1' }}>
-            Requirements
-            <textarea value={form.description} onChange={(event) => updateForm('description', event.target.value)} rows={3} style={inputStyle} />
+          <label className="rz-field" style={{ gridColumn: '1 / -1' }}>
+            <span className="rz-field__label">Requirements</span>
+            <textarea value={form.description} onChange={(event) => updateForm('description', event.target.value)} rows={3} className="rz-field__input" />
           </label>
           <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" style={buttonStyle}>Create request</button>
+            <button type="submit" className="rz-btn rz-btn--primary rz-btn--sm">Create request</button>
           </div>
         </form>
       </section>
@@ -276,18 +276,19 @@ function Procurement() {
               }}
               style={{
                 width: '100%',
-                border: '1px solid #e5e7eb',
+                border: `1px solid ${activeRequestId === request.id ? 'var(--rz-border-accent)' : 'var(--rz-border)'}`,
                 borderRadius: 8,
                 textAlign: 'left',
                 padding: '0.6rem',
                 marginBottom: 8,
-                background: activeRequestId === request.id ? '#dcfce7' : '#fff',
+                background: activeRequestId === request.id ? 'var(--rz-bg-surface)' : 'transparent',
+                color: 'var(--rz-text-primary)',
                 cursor: 'pointer',
               }}
             >
               <strong>{request.title}</strong>
-              <div style={{ fontSize: '0.85rem', color: '#4b5563' }}>
-                {request.status} · {request.priority} priority · {request.is_overdue ? 'Overdue ⚠️' : 'On track'}
+              <div style={{ fontSize: '0.85rem', color: 'var(--rz-text-muted)' }}>
+                {request.status} · {request.priority} priority · {request.is_overdue ? 'Overdue' : 'On track'}
               </div>
             </button>
           ))}
@@ -300,7 +301,7 @@ function Procurement() {
             <>
               <div className="space-y-4" style={{ maxHeight: 220, overflow: 'auto' }}>
                 {suppliers.map((supplier) => (
-                  <label key={supplier.id} style={{ display: 'block', borderBottom: '1px solid #f3f4f6', paddingBottom: 8 }}>
+                  <label key={supplier.id} style={{ display: 'block', borderBottom: '1px solid var(--rz-border-subtle)', paddingBottom: 8 }}>
                     <input
                       type="checkbox"
                       checked={selectedSuppliers.includes(supplier.id)}
@@ -312,8 +313,8 @@ function Procurement() {
                 ))}
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button onClick={saveTargets} style={buttonStyle}>Save targets</button>
-                <button onClick={sendRFQ} style={buttonStyle} disabled={!selectedSuppliers.length}>Send RFQ</button>
+                <button onClick={saveTargets} className="rz-btn rz-btn--primary rz-btn--sm">Save targets</button>
+                <button onClick={sendRFQ} className="rz-btn rz-btn--ghost rz-btn--sm" disabled={!selectedSuppliers.length}>Send RFQ</button>
               </div>
             </>
           )}
@@ -323,9 +324,9 @@ function Procurement() {
       <section className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))' }}>
         <div className="card" style={{ padding: '1rem' }}>
           <h3 style={{ marginTop: 0 }}>Supplier recommendation panel</h3>
-          <label>
-            Scoring profile
-            <select value={scoreProfile} onChange={(event) => setScoreProfile(event.target.value)} style={inputStyle}>
+          <label className="rz-field">
+            <span className="rz-field__label">Scoring profile</span>
+            <select value={scoreProfile} onChange={(event) => setScoreProfile(event.target.value)} className="rz-field__input">
               <option value="balanced">Balanced</option>
               <option value="cost_first">Cost-first</option>
               <option value="quality_first">Quality-first</option>
@@ -334,13 +335,13 @@ function Procurement() {
           </label>
           {!recommendations.length && <p style={{ marginTop: 8 }}>No recommendations yet.</p>}
           {recommendations.map((entry) => (
-            <div key={entry.supplier.id} style={{ borderTop: '1px solid #f3f4f6', padding: '0.6rem 0' }}>
+            <div key={entry.supplier.id} style={{ borderTop: '1px solid var(--rz-border-subtle)', padding: '0.6rem 0' }}>
               <strong>{entry.supplier.company_name}</strong>
-              <div style={{ fontSize: '0.85rem', color: '#4b5563' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--rz-text-muted)' }}>
                 Score: {entry.recommendation_score} · Price: ${entry.offering.price_per_kg}/kg · Lead time: {entry.offering.lead_time_days} days
               </div>
-              <small>Why: {(entry.explainability?.why || []).join(', ') || 'Insufficient data'}</small>
-              {entry.risk_signals?.length > 0 && <div style={{ color: '#92400e', fontSize: '0.8rem' }}>Risk: {entry.risk_signals.join(', ')}</div>}
+              <small style={{ color: 'var(--rz-text-muted)' }}>Why: {(entry.explainability?.why || []).join(', ') || 'Insufficient data'}</small>
+              {entry.risk_signals?.length > 0 && <div style={{ color: 'hsl(0 84% 60%)', fontSize: '0.8rem' }}>Risk: {entry.risk_signals.join(', ')}</div>}
             </div>
           ))}
         </div>
@@ -350,19 +351,19 @@ function Procurement() {
           {!activeRequest && <p>Select a request first.</p>}
           {activeRequest && (
             <>
-              <button onClick={scoreResponses} style={buttonStyle} disabled={!responses.length}>Score/rank options</button>
+              <button onClick={scoreResponses} className="rz-btn rz-btn--primary rz-btn--sm" disabled={!responses.length}>Score/rank options</button>
               {!responses.length && <p style={{ marginTop: 8 }}>No supplier responses yet.</p>}
               {responses.map((response) => (
-                <div key={response.id} style={{ borderTop: '1px solid #f3f4f6', padding: '0.65rem 0' }}>
+                <div key={response.id} style={{ borderTop: '1px solid var(--rz-border-subtle)', padding: '0.65rem 0' }}>
                   <strong>{response.supplier?.company_name || `Supplier #${response.supplier_id}`}</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#4b5563' }}>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--rz-text-muted)' }}>
                     ${response.quoted_price}/kg · Lead {response.lead_time_days}d · Total score {response.score_breakdown?.total ?? 'n/a'}
                   </div>
-                  <div style={{ fontSize: '0.8rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--rz-text-muted)' }}>
                     Breakdown: price {response.score_breakdown?.price ?? 'n/a'} · quality {response.score_breakdown?.quality ?? 'n/a'} · sustainability {response.score_breakdown?.sustainability ?? 'n/a'} · risk {response.score_breakdown?.risk ?? 'n/a'}
                   </div>
                   {activeRequest.status !== 'awarded' && (
-                    <button onClick={() => awardRequest(response.id)} style={{ ...buttonStyle, marginTop: 6 }}>Award this supplier</button>
+                    <button onClick={() => awardRequest(response.id)} className="rz-btn rz-btn--primary rz-btn--sm" style={{ marginTop: 6 }}>Award this supplier</button>
                   )}
                 </div>
               ))}
@@ -378,29 +379,11 @@ function Procurement() {
           placeholder="Document why the selected supplier was chosen..."
           value={awardRationale}
           onChange={(event) => setAwardRationale(event.target.value)}
-          style={inputStyle}
+          className="rz-field__input"
         />
       </section>
     </div>
   )
-}
-
-const inputStyle = {
-  width: '100%',
-  marginTop: 4,
-  marginBottom: 8,
-  borderRadius: 8,
-  border: '1px solid #d1d5db',
-  padding: '0.55rem 0.7rem',
-}
-
-const buttonStyle = {
-  border: '1px solid #16a34a',
-  borderRadius: 8,
-  background: '#16a34a',
-  color: '#fff',
-  padding: '0.5rem 0.8rem',
-  cursor: 'pointer',
 }
 
 export default Procurement

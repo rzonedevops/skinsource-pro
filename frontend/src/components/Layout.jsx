@@ -7,33 +7,25 @@ const NAV_ITEMS = [
   { id: 'procurement', name: 'Procurement' },
 ]
 
-const buttonStyle = {
-  width: '100%',
-  textAlign: 'left',
-  border: '1px solid #e5e7eb',
-  background: '#fff',
-  borderRadius: 8,
-  padding: '0.6rem 0.8rem',
-  cursor: 'pointer',
-}
-
 function Layout({ children, currentPage, onPageChange }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex' }}>
-      <aside style={{ width: open ? 220 : 76, background: '#ffffff', borderRight: '1px solid #e5e7eb', padding: 12, transition: 'all .2s ease' }}>
-        <button onClick={() => setOpen((prev) => !prev)} style={{ ...buttonStyle, marginBottom: 10 }}>{open ? 'Close' : 'Menu'}</button>
+    <div className="app-shell">
+      <aside className="app-sidebar" style={{ width: open ? 220 : 76 }}>
+        <div className="app-sidebar__brand">
+          <img src="/assets/logo-regima-blue.jpg" alt="RégimA" />
+          {open && <span>RégimA Zone</span>}
+        </div>
+        <button onClick={() => setOpen((prev) => !prev)} className="app-nav-btn" style={{ marginBottom: 10 }}>
+          {open ? 'Close' : 'Menu'}
+        </button>
         {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
             onClick={() => onPageChange(item.id)}
-            style={{
-              ...buttonStyle,
-              marginBottom: 8,
-              background: currentPage === item.id ? '#dcfce7' : '#fff',
-              fontWeight: currentPage === item.id ? 600 : 400,
-            }}
+            className={`app-nav-btn${currentPage === item.id ? ' is-active' : ''}`}
+            style={{ marginBottom: 8 }}
             title={item.name}
           >
             {open ? item.name : item.name.slice(0, 1)}
@@ -42,7 +34,8 @@ function Layout({ children, currentPage, onPageChange }) {
       </aside>
       <main style={{ flex: 1, padding: '1rem 1.25rem' }}>
         <header style={{ marginBottom: '1rem' }}>
-          <h1 style={{ margin: 0, textTransform: 'capitalize' }}>SkinSource Pro · {currentPage}</h1>
+          <div className="rz-section__label">RégimA Zone</div>
+          <h1 className="app-header__title">SkinSource Pro · {currentPage}</h1>
         </header>
         {children}
       </main>

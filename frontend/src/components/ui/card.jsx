@@ -11,7 +11,7 @@ export function CardTitle({ children, className = '' }) {
 }
 
 export function CardDescription({ children, className = '' }) {
-  return <p className={className} style={{ margin: '0.25rem 0 0', color: '#6b7280', fontSize: '0.9rem' }}>{children}</p>
+  return <p className={className} style={{ margin: '0.25rem 0 0', color: 'var(--rz-text-muted)', fontSize: '0.9rem' }}>{children}</p>
 }
 
 export function CardContent({ children, className = '' }) {

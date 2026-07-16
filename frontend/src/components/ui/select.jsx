@@ -22,5 +22,5 @@ export function SelectItem({ value, children }) {
 
 export function NativeSelect({ value, onChange, children, className = '' }) {
   const id = useId()
-  return <select id={id} className={className} style={{ padding: '0.55rem 0.75rem', border: '1px solid #d1d5db', borderRadius: 8 }} value={value} onChange={onChange}>{children}</select>
+  return <select id={id} className={`rz-field__input ${className}`} style={{ width: 'auto' }} value={value} onChange={onChange}>{children}</select>
 }

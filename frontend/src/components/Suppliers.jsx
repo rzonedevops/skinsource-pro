@@ -25,8 +25,8 @@ function Suppliers() {
       {data.map((supplier) => (
         <div key={supplier.id} className="card" style={{ padding: '0.8rem 1rem' }}>
           <h3 style={{ margin: 0 }}>{supplier.company_name}</h3>
-          <p style={{ margin: '0.3rem 0', color: '#4b5563' }}>{supplier.country || 'Country unknown'}</p>
-          <small>
+          <p style={{ margin: '0.3rem 0', color: 'var(--rz-text-muted)' }}>{supplier.country || 'Country unknown'}</p>
+          <small style={{ color: 'var(--rz-text-muted)' }}>
             Quality {supplier.scores?.quality ?? 'n/a'} · Reliability {supplier.scores?.reliability ?? 'n/a'} · Sustainability {supplier.scores?.sustainability ?? 'n/a'}
           </small>
         </div>

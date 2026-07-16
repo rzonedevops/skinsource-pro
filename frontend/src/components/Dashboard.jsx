@@ -53,9 +53,9 @@ function Dashboard() {
         <h3 style={{ marginTop: 0 }}>Procurement intelligence signals</h3>
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))' }}>
           {healthSignals.map((signal) => (
-            <div key={signal.label} style={{ padding: '0.7rem', borderRadius: 10, background: signal.tone === 'good' ? '#dcfce7' : '#fef3c7' }}>
-              <small>{signal.label}</small>
-              <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{signal.value}</div>
+            <div key={signal.label} className={`signal-tile${signal.tone === 'good' ? ' signal-tile--good' : ''}`}>
+              <small className="signal-tile__label">{signal.label}</small>
+              <div className="signal-tile__value">{signal.value}</div>
             </div>
           ))}
         </div>
@@ -66,9 +66,9 @@ function Dashboard() {
           <h3 style={{ marginTop: 0 }}>Recent requests</h3>
           {!recentRequests.length && <p>No recent requests found.</p>}
           {recentRequests.map((req) => (
-            <div key={req.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid #f3f4f6' }}>
+            <div key={req.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid var(--rz-border-subtle)' }}>
               <strong>{req.title}</strong>
-              <div style={{ fontSize: '0.85rem', color: '#4b5563' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--rz-text-muted)' }}>
                 {req.status} · priority {req.priority} · {req.response_count} responses
               </div>
             </div>
@@ -79,10 +79,10 @@ function Dashboard() {
           <h3 style={{ marginTop: 0 }}>Lifecycle timeline</h3>
           {!recentEvents.length && <p>No events captured yet.</p>}
           {recentEvents.map((event) => (
-            <div key={event.id} style={{ padding: '0.45rem 0', borderBottom: '1px solid #f3f4f6' }}>
+            <div key={event.id} style={{ padding: '0.45rem 0', borderBottom: '1px solid var(--rz-border-subtle)' }}>
               <strong>{event.event_type}</strong>
-              <div style={{ fontSize: '0.85rem', color: '#4b5563' }}>{event.from_status || '-'} → {event.to_status || '-'}</div>
-              <small style={{ color: '#6b7280' }}>{event.created_at}</small>
+              <div style={{ fontSize: '0.85rem', color: 'var(--rz-text-muted)' }}>{event.from_status || '-'} → {event.to_status || '-'}</div>
+              <small style={{ color: 'var(--rz-text-faint)' }}>{event.created_at}</small>
             </div>
           ))}
         </div>
@@ -93,9 +93,9 @@ function Dashboard() {
 
 function StatCard({ label, value }) {
   return (
-    <div className="card" style={{ padding: '0.9rem' }}>
-      <small style={{ color: '#6b7280' }}>{label}</small>
-      <div style={{ fontSize: '1.3rem', fontWeight: 700 }}>{value}</div>
+    <div className="rz-stat">
+      <div className="rz-stat__value">{value}</div>
+      <div className="rz-stat__label">{label}</div>
     </div>
   )
 }

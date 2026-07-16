@@ -1,0 +1,540 @@
+/* ==========================================================================
+   RegimA Zone Design System — full canonical stylesheet
+   Source of truth: rzonedevops/rzodesys
+   Vendored copy for skinsource-pro (dist/rzodesys.css) — do not edit by hand;
+   re-vendor from rzonedevops/rzodesys to update.
+   Token source: themes/bigpoint/css/custom.css (RegimA-Zone/regimazone)
+   "REGIMA ZONE — UNIFIED BRAND THEME v2.0"
+
+   Contents: webfonts + design tokens + base element styles + rz-* component
+   classes (header, footer, button, card, feature tile, chip, form field,
+   section heading, stat, step, CTA banner). Intended for plain-CSS consumers;
+   Tailwind/shadcn apps should vendor dist/rzodesys-tokens.css instead and
+   map their theme variables per INTEGRATION.md.
+   ========================================================================== */
+
+/* Webfonts: the upstream @import is removed here; Montserrat and Open Sans
+   load via <link> tags in frontend/index.html instead. */
+
+/* --------------------------------------------------------------------------
+   Tokens
+   -------------------------------------------------------------------------- */
+:root {
+  /* Base palette */
+  --rz-bg-primary:       #00082c;  /* Deep Navy — page background */
+  --rz-bg-secondary:     #001236;  /* Dark Navy — cards */
+  --rz-bg-surface:       #001a4a;  /* Navy Surface — inputs, nested cards */
+  --rz-bg-accent:        #00245e;  /* Navy Accent — gradients, emphasis */
+  --rz-blue-electric:    #0066cc;  /* Electric Blue — primary actions */
+  --rz-blue-sky:         #00aaff;  /* Sky Blue — highlights, links, labels */
+  --rz-blue-glow:        #4db8ff;  /* Glow Blue — link hover */
+  --rz-blue-royal:       #2b3c99;  /* Royal Blue — legacy print/logo background */
+  --rz-white:            #ffffff;
+  --rz-text-primary:     #e8eaf0;  /* Off-white body text */
+  --rz-text-muted:       #99a8c0;  /* Muted secondary text */
+  --rz-text-faint:       #4a5a78;  /* Placeholder / section labels on nav */
+  --rz-text-dark:        #262f3a;  /* Dark text for light backgrounds */
+  --rz-border:           rgba(255,255,255,0.12);
+  --rz-border-subtle:    rgba(255,255,255,0.08);
+  --rz-border-accent:    rgba(0,170,255,0.3);
+
+  /* Semantic aliases */
+  --surface-page:        var(--rz-bg-primary);
+  --surface-card:        var(--rz-bg-secondary);
+  --surface-raised:      var(--rz-bg-surface);
+  --text-heading:        var(--rz-white);
+  --text-body:           var(--rz-text-primary);
+  --text-muted:          var(--rz-text-muted);
+  --accent-primary:      var(--rz-blue-electric);
+  --accent-highlight:    var(--rz-blue-sky);
+  --gradient-accent:     linear-gradient(90deg, #0066cc, #00aaff);
+  --gradient-panel:      linear-gradient(135deg, #001a4a 0%, #00245e 100%);
+  --gradient-banner:     linear-gradient(135deg, #001236 0%, #00245e 100%);
+
+  /* Typography */
+  --rz-font-heading: 'Montserrat', sans-serif;
+  --rz-font-body:    'Open Sans', sans-serif;
+  --text-hero:      clamp(28px, 4vw, 48px);
+  --text-h1:        clamp(32px, 5vw, 56px);
+  --text-h2:        clamp(24px, 3.5vw, 36px);
+  --text-h3:        clamp(20px, 2.5vw, 28px);
+  --text-h4:        clamp(18px, 2vw, 22px);
+  --text-section:   20px;
+  --text-body-size: 16px;
+  --text-small:     14px;
+  --text-caption:   13px;
+  --text-nav:       13px;
+  --text-label:     11px;
+  --text-microlabel:10px;
+  --weight-hero:    800;
+  --weight-heading: 700;
+  --weight-subhead: 600;
+  --weight-label:   700;
+  --weight-body:    400;
+  --tracking-tight:   -0.02em;
+  --tracking-heading: -0.01em;
+  --tracking-nav:     0.08em;
+  --tracking-label:   0.12em;
+  --tracking-eyebrow: 0.18em;
+  --leading-heading: 1.2;
+  --leading-hero:    1.1;
+  --leading-body:    1.65;
+  --leading-relaxed: 1.7;
+
+  /* Spacing scale */
+  --rz-space-xs: 8px;
+  --rz-space-sm: 16px;
+  --rz-space-md: 32px;
+  --rz-space-lg: 64px;
+  --rz-space-xl: 96px;
+
+  /* Radii */
+  --rz-radius-sm: 4px;
+  --rz-radius-md: 8px;
+  --rz-radius-lg: 16px;
+  --rz-radius-card: 12px;
+  --rz-radius-tile: 10px;
+
+  /* Shadows */
+  --rz-shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+  --rz-shadow-glow: 0 0 24px rgba(0,170,255,0.15);
+  --rz-shadow-btn-glow: 0 0 20px rgba(0,170,255,0.35);
+  --rz-shadow-header: 0 2px 16px rgba(0,0,0,0.5);
+
+  /* Focus ring */
+  --rz-focus-ring: 0 0 0 3px rgba(0,170,255,0.15);
+
+  /* Content widths */
+  --rz-width-portal: 1080px;
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+body {
+  background-color: var(--surface-page);
+  color: var(--text-body);
+  font-family: var(--rz-font-body);
+  font-size: var(--text-body-size);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--rz-font-heading);
+  color: var(--text-heading);
+  letter-spacing: var(--tracking-heading);
+  line-height: var(--leading-heading);
+  margin: 0 0 0.5em;
+}
+h1 { font-size: var(--text-h1); font-weight: 700; }
+h2 { font-size: var(--text-h2); font-weight: 600; }
+h3 { font-size: var(--text-h3); font-weight: 600; }
+h4 { font-size: var(--text-h4); font-weight: 500; }
+a { color: var(--rz-blue-sky); text-decoration: none; transition: color 0.2s ease; }
+a:hover { color: var(--rz-blue-glow); }
+strong, b { font-weight: 600; }
+::placeholder { color: var(--rz-text-faint); opacity: 1; }
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--rz-blue-sky);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Layout
+   -------------------------------------------------------------------------- */
+.rz-main {
+  max-width: var(--rz-width-portal);
+  margin: 0 auto;
+  padding: 48px 24px 0;
+}
+.rz-grid-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 56px;
+}
+.rz-grid-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 56px;
+}
+.rz-grid-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin: 20px 0 56px;
+}
+
+/* --------------------------------------------------------------------------
+   Header (rz-header)
+   -------------------------------------------------------------------------- */
+.rz-header {
+  background: var(--rz-bg-primary);
+  border-bottom: 1px solid var(--rz-border);
+  box-shadow: var(--rz-shadow-header);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.rz-header__inner {
+  max-width: var(--rz-width-portal);
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rz-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rz-header__brand img { height: 40px; border-radius: 6px; display: block; }
+.rz-header__brand span {
+  font: 700 13px var(--rz-font-heading);
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+.rz-header__nav { display: flex; gap: 28px; align-items: center; }
+.rz-header__nav > a {
+  font: 600 13px var(--rz-font-heading);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  transition: color 0.2s ease;
+}
+.rz-header__nav > a:hover,
+.rz-header__nav > a.is-active { color: var(--rz-blue-sky); }
+
+/* --------------------------------------------------------------------------
+   Footer (rz-footer)
+   -------------------------------------------------------------------------- */
+.rz-footer {
+  background: var(--rz-bg-primary);
+  border-top: 1px solid var(--rz-border);
+  margin-top: 64px;
+}
+.rz-footer__inner {
+  max-width: var(--rz-width-portal);
+  margin: 0 auto;
+  padding: 48px 24px;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 32px;
+}
+.rz-footer__logo { height: 72px; border-radius: 8px; margin-bottom: 12px; display: block; }
+.rz-footer__blurb {
+  font: 400 13px var(--rz-font-body);
+  color: var(--rz-text-muted);
+  line-height: 1.7;
+  max-width: 280px;
+  margin: 0;
+}
+.rz-footer__col-title {
+  font: 700 14px var(--rz-font-heading);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fff;
+  margin-bottom: 14px;
+}
+.rz-footer__col a {
+  display: block;
+  font: 400 13px var(--rz-font-body);
+  color: var(--rz-text-muted);
+  margin-bottom: 8px;
+}
+.rz-footer__col a:hover { color: var(--rz-blue-sky); }
+.rz-footer__legal {
+  border-top: 1px solid var(--rz-border-subtle);
+  padding: 16px 24px;
+  text-align: center;
+  font: 400 12px var(--rz-font-body);
+  color: var(--rz-text-faint);
+}
+
+/* --------------------------------------------------------------------------
+   Button (rz-btn)
+   -------------------------------------------------------------------------- */
+.rz-btn {
+  display: inline-block;
+  font-family: var(--rz-font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 13px 28px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+.rz-btn--primary {
+  background: var(--rz-blue-electric);
+  border-color: var(--rz-blue-electric);
+  color: #fff;
+}
+.rz-btn--primary:hover {
+  background: var(--rz-blue-sky);
+  border-color: var(--rz-blue-sky);
+  color: #fff;
+  box-shadow: var(--rz-shadow-btn-glow);
+}
+.rz-btn--ghost {
+  background: transparent;
+  border-color: rgba(255,255,255,0.3);
+  color: var(--rz-text-primary);
+}
+.rz-btn--ghost:hover {
+  border-color: var(--rz-blue-sky);
+  color: var(--rz-blue-sky);
+}
+.rz-btn--sm { padding: 10px 20px; }
+.rz-btn--full { width: 100%; }
+
+/* --------------------------------------------------------------------------
+   Card (rz-card)
+   -------------------------------------------------------------------------- */
+.rz-card {
+  background: var(--rz-bg-secondary);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: var(--rz-shadow-card);
+}
+.rz-card--accent { border-color: rgba(0,170,255,0.2); }
+
+/* --------------------------------------------------------------------------
+   Feature tile (rz-feature-card)
+   -------------------------------------------------------------------------- */
+.rz-feature-card {
+  background: var(--rz-bg-surface);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 22px 20px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.rz-feature-card:hover {
+  border-color: rgba(0,170,255,0.3);
+  transform: translateY(-2px);
+}
+.rz-feature-card__icon { display: block; margin-bottom: 12px; height: 22px; }
+.rz-feature-card__icon img { height: 32px; }
+.rz-feature-card__title {
+  font-family: var(--rz-font-heading);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.rz-feature-card__desc {
+  font-family: var(--rz-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--rz-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   Filter chip (lol-filter / isotope-filter)
+   -------------------------------------------------------------------------- */
+.rz-chip {
+  font-family: var(--rz-font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: transparent;
+  border: 1px solid rgba(0,170,255,0.3);
+  border-radius: 4px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.rz-chip:hover,
+.rz-chip.is-active {
+  background: var(--rz-blue-electric);
+  border-color: var(--rz-blue-electric);
+}
+.rz-chip-row { display: flex; gap: 8px; margin: 18px 0 20px; }
+
+/* --------------------------------------------------------------------------
+   Form field (rz-form)
+   -------------------------------------------------------------------------- */
+.rz-field { display: block; }
+.rz-field__label {
+  display: block;
+  font-family: var(--rz-font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rz-text-muted);
+  margin: 14px 0 6px;
+}
+.rz-field__input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--rz-bg-surface);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: var(--rz-text-primary);
+  font-family: var(--rz-font-body);
+  font-size: 14px;
+  padding: 11px 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+}
+.rz-field__input:focus {
+  border-color: var(--rz-blue-sky);
+  box-shadow: var(--rz-focus-ring);
+  outline: none;
+}
+
+/* --------------------------------------------------------------------------
+   Section heading (rz-section-label / title / sub + gradient divider)
+   -------------------------------------------------------------------------- */
+.rz-section__label {
+  font-family: var(--rz-font-heading);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rz-blue-sky);
+  margin-bottom: 6px;
+}
+.rz-section__title {
+  font-family: var(--rz-font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.rz-section__sub {
+  font-family: var(--rz-font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--rz-text-muted);
+  max-width: 640px;
+}
+.rz-section--hero .rz-section__label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  margin-bottom: 10px;
+}
+.rz-section--hero .rz-section__title {
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0 0 16px;
+}
+.rz-section--hero .rz-section__sub {
+  font-size: 16px;
+  line-height: 1.7;
+}
+.rz-divider {
+  width: 48px;
+  height: 3px;
+  background: var(--gradient-accent);
+  border-radius: 2px;
+  margin-top: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   Stat tile (rz-stat)
+   -------------------------------------------------------------------------- */
+.rz-stat {
+  background: var(--rz-bg-surface);
+  border: 1px solid rgba(0,170,255,0.12);
+  border-radius: 10px;
+  padding: 20px 16px;
+  text-align: center;
+}
+.rz-stat__value {
+  font-family: var(--rz-font-heading);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--rz-blue-sky);
+  line-height: 1.1;
+}
+.rz-stat__label {
+  font-family: var(--rz-font-heading);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rz-text-muted);
+  margin-top: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   Step tile (rz-step)
+   -------------------------------------------------------------------------- */
+.rz-step {
+  background: var(--rz-bg-surface);
+  border: 1px solid rgba(0,170,255,0.15);
+  border-radius: 10px;
+  padding: 24px 20px;
+}
+.rz-step__number {
+  font-family: var(--rz-font-heading);
+  font-size: 32px;
+  font-weight: 800;
+  color: rgba(0,170,255,0.25);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+.rz-step__title {
+  font-family: var(--rz-font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.rz-step__desc {
+  font-family: var(--rz-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--rz-text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   CTA banner (rz-cta-banner)
+   -------------------------------------------------------------------------- */
+.rz-cta-banner {
+  background: var(--gradient-banner);
+  border: 1px solid rgba(0,170,255,0.25);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+}
+.rz-cta-banner__title {
+  font-family: var(--rz-font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 10px;
+}
+.rz-cta-banner__text {
+  font-family: var(--rz-font-body);
+  font-size: 14px;
+  color: var(--rz-text-muted);
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+.rz-cta-banner__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
